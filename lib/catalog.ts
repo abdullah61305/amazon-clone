@@ -1,4 +1,5 @@
 import data from "@/data/catalog.json";
+import { compactCount, usd } from "@/lib/format";
 
 export type VariationOption = { label: string; delta: number };
 export type Variation = { name: string; options: VariationOption[] };
@@ -46,6 +47,9 @@ export const departmentName = (slug: string) => departmentNames.get(slug) ?? slu
 export const departmentOfCategory = (slug: string) => departments.find((d) => d.categories.some((c) => c.slug === slug));
 export const productHref = (p: Pick<Product, "id" | "slug">) => `/dp/${p.id}/${p.slug}`;
 
+/** Standard delivery estimate; varies by product so a results grid never shows one date everywhere. */
+export const deliveryDays = (p: Pick<Product, "id" | "primeDays">) => p.primeDays + 1 + (p.id % 3);
+
 export function discountPercent(p: Pick<Product, "price" | "listPrice">) {
   return p.listPrice ? Math.round((1 - p.price / p.listPrice) * 100) : 0;
 }
@@ -80,7 +84,29 @@ export type SearchParams = {
   deals?: boolean;
   sort?: Sort;
   page?: number;
+  exact?: boolean; // search the query verbatim, skipping typo correction
 };
+
+export type DecidePick = { key: "lowest" | "rated" | "value"; product: Product; reason: string };
+
+/**
+ * "Help me decide": deterministic picks over the full filtered result set.
+ * Best value = highest rating-weighted score per dollar among well-reviewed items.
+ */
+function decide(list: Product[]): DecidePick[] {
+  if (list.length < 3) return [];
+  const lowest = [...list].sort((a, b) => a.price - b.price || b.rating - a.rating)[0];
+  const rated = [...list].sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount)[0];
+  const pool = list.filter((p) => p.rating >= 4 && p.reviewCount >= 500);
+  const valueScore = (p: Product) => (p.rating ** 3 * Math.log10(p.reviewCount)) / Math.sqrt(p.price);
+  const value = [...(pool.length ? pool : list)].sort((a, b) => valueScore(b) - valueScore(a))[0];
+  const n = list.length;
+  return [
+    { key: "lowest", product: lowest, reason: `The cheapest of ${n} results at ${usd(lowest.price)}, still rated ${lowest.rating.toFixed(1)} out of 5.` },
+    { key: "rated", product: rated, reason: `The highest rating in these results: ${rated.rating.toFixed(1)} out of 5 from ${compactCount(rated.reviewCount)} ratings.` },
+    { key: "value", product: value, reason: `The best balance of rating, review volume and price — ${value.rating.toFixed(1)}★ for ${usd(value.price)}.` },
+  ];
+}
 
 export const PAGE_SIZE = 16;
 
@@ -170,6 +196,7 @@ export function search(params: SearchParams) {
     page,
     pageCount,
     results: filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(({ p }) => p),
+    picks: decide(filtered.map(({ p }) => p)),
     brands: [...brandCounts].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count })),
     categories: [...categoryCounts].sort((a, b) => b[1] - a[1]).map(([slug, count]) => ({ slug, name: categoryName(slug), count })),
   };

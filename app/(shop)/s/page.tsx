@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Star, X } from "lucide-react";
+import { Star } from "lucide-react";
 import {
   categoryName,
   departmentName,
@@ -8,6 +8,7 @@ import {
   didYouMean,
   PAGE_SIZE,
   PRICE_BUCKETS,
+  productHref,
   search,
   SearchParams,
   Sort,
@@ -18,6 +19,8 @@ import { ResultCard } from "@/components/product-card";
 import { SortSelect } from "@/components/results/sort-select";
 import { FilterSheet } from "@/components/results/filter-sheet";
 import { NoResults } from "@/components/results/no-results";
+import { Chip, FilterLink, ResultsLink, ResultsRegion } from "@/components/results/filter-links";
+import { HelpDecide, Pick } from "@/components/results/help-decide";
 
 type Raw = Record<string, string | string[] | undefined>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -36,6 +39,7 @@ function parse(raw: Raw): SearchParams {
     deals: first(raw.deals) === "1",
     sort: SORTS.some((s) => s.value === sort) ? (sort as Sort) : undefined,
     page: Number.isFinite(page) && page > 1 ? Math.floor(page) : undefined,
+    exact: first(raw.exact) === "1",
   };
 }
 
@@ -50,10 +54,11 @@ function toQuery(p: SearchParams) {
   if (p.deals) sp.set("deals", "1");
   if (p.sort && p.sort !== "featured") sp.set("sort", p.sort);
   if (p.page && p.page > 1) sp.set("page", String(p.page));
+  if (p.exact) sp.set("exact", "1");
   return `/s?${sp.toString()}`;
 }
 
-/** Any filter change resets pagination, like Amazon. */
+/** Any filter change resets pagination, like Amazon. Filters combine with AND. */
 const withChange = (p: SearchParams, change: Partial<SearchParams>) => toQuery({ ...p, page: undefined, ...change });
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Raw> }): Promise<Metadata> {
@@ -65,24 +70,25 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const params = parse(await searchParams);
   let result = search(params);
   let corrected: string | null = null;
-  if (result.total === 0 && params.k) {
+  // Amazon's pattern: auto-correct an obvious typo, but let the shopper search the original verbatim.
+  if (result.total === 0 && params.k && !params.exact) {
     corrected = didYouMean(params.k);
     if (corrected) result = search({ ...params, k: corrected });
   }
   const effective = corrected ? { ...params, k: corrected } : params;
-  const { total, page, pageCount, results } = result;
+  const { total, page, pageCount, results, picks } = result;
   const start = (page - 1) * PAGE_SIZE + 1;
   const end = Math.min(total, page * PAGE_SIZE);
 
   const chips: { label: string; href: string }[] = [];
-  if (params.dept && (params.k || params.cat)) chips.push({ label: departmentName(params.dept), href: withChange(params, { dept: undefined, cat: undefined }) });
-  if (params.cat) chips.push({ label: categoryName(params.cat), href: withChange(params, { cat: undefined }) });
-  for (const b of params.brand ?? []) chips.push({ label: b, href: withChange(params, { brand: params.brand!.filter((x) => x !== b) }) });
-  if (params.rating) chips.push({ label: `${params.rating}★ & Up`, href: withChange(params, { rating: undefined }) });
-  if (params.price) chips.push({ label: PRICE_BUCKETS.find((b) => b.value === params.price)!.label, href: withChange(params, { price: undefined }) });
-  if (params.deals) chips.push({ label: "Today's Deals", href: withChange(params, { deals: undefined }) });
+  if (effective.dept && (effective.k || effective.cat)) chips.push({ label: departmentName(effective.dept), href: withChange(effective, { dept: undefined, cat: undefined }) });
+  if (effective.cat) chips.push({ label: categoryName(effective.cat), href: withChange(effective, { cat: undefined }) });
+  for (const b of effective.brand ?? []) chips.push({ label: b, href: withChange(effective, { brand: effective.brand!.filter((x) => x !== b) }) });
+  if (effective.rating) chips.push({ label: `${effective.rating}★ & Up`, href: withChange(effective, { rating: undefined }) });
+  if (effective.price) chips.push({ label: PRICE_BUCKETS.find((b) => b.value === effective.price)!.label, href: withChange(effective, { price: undefined }) });
+  if (effective.deals) chips.push({ label: "Today's Deals", href: withChange(effective, { deals: undefined }) });
   const hasFilters = chips.length > 0;
-  const clearAll = toQuery({ k: params.k, dept: params.k ? undefined : params.dept, sort: params.sort });
+  const clearAll = toQuery({ k: effective.k, dept: effective.k ? undefined : effective.dept, sort: effective.sort });
 
   const heading = params.k ? (
     <>
@@ -96,9 +102,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     <>in <b>Today&apos;s Deals</b></>
   ) : null;
 
-  const filters = (
-    <FilterPanel params={effective} brands={result.brands} categories={result.categories} />
-  );
+  const decide: Pick[] = picks.map(({ key, product: p, reason }) => ({
+    key,
+    label: key === "lowest" ? "Lowest price" : key === "rated" ? "Best rated" : "Best value",
+    reason,
+    product: { id: p.id, title: p.title, href: productHref(p), thumbnail: p.thumbnail, price: p.price, rating: p.rating, reviewCount: p.reviewCount },
+  }));
+
+  const filters = <FilterPanel params={effective} brands={result.brands} categories={result.categories} />;
 
   return (
     <div className="flex flex-1 flex-col bg-white">
@@ -114,7 +125,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               <>No results {heading}</>
             )}
           </p>
-          {total > 0 && <SortSelect value={params.sort ?? "featured"} hrefs={Object.fromEntries(SORTS.map((s) => [s.value, withChange(params, { sort: s.value })]))} />}
+          {total > 0 && <SortSelect value={effective.sort ?? "featured"} hrefs={Object.fromEntries(SORTS.map((s) => [s.value, withChange(effective, { sort: s.value })]))} />}
         </div>
         {/* Mobile: filter button + active chips in a scrollable row */}
         <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-3 pb-[10px] lg:hidden">
@@ -122,6 +133,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           {chips.map((c) => (
             <Chip key={c.label} {...c} />
           ))}
+          {hasFilters && (
+            <ResultsLink href={clearAll} scroll={false} className="link shrink-0 whitespace-nowrap px-1 text-[13px]">
+              Clear all
+            </ResultsLink>
+          )}
         </div>
       </div>
 
@@ -131,65 +147,50 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         </aside>
 
         <div className="min-w-0 flex-1 py-4">
-          {corrected && (
-            <p className="mb-3 text-[16px]">
-              Showing results for <Link href={toQuery({ ...params, k: corrected })} className="font-bold italic text-link hover:underline">{corrected}</Link>
-              <br />
-              <span className="text-[13px]">
-                Search instead for <span className="text-link">{params.k}</span>
-              </span>
-            </p>
-          )}
+          <ResultsRegion>
+            {corrected && (
+              <p className="mb-3 text-[16px]">
+                Showing results for <span className="font-bold italic text-[#c45500]">{corrected}</span>
+                <br />
+                <span className="text-[13px]">
+                  Search instead for{" "}
+                  <Link href={toQuery({ ...params, exact: true })} className="link">
+                    {params.k}
+                  </Link>
+                </span>
+              </p>
+            )}
 
-          {hasFilters && (
-            <div className="mb-3 hidden flex-wrap items-center gap-2 lg:flex">
-              {chips.map((c) => (
-                <Chip key={c.label} {...c} />
-              ))}
-              <Link href={clearAll} className="link ml-1 text-[13px]">
-                Clear all
-              </Link>
-            </div>
-          )}
-
-          {total === 0 ? (
-            <NoResults query={params.k} clearHref={hasFilters ? clearAll : undefined} popular={topRated(() => true, 8)} />
-          ) : (
-            <>
-              <h1 className="text-[20px] font-bold leading-[28px]">Results</h1>
-              <p className="mb-2 text-[13px] text-muted">Check each product page for other buying options. Price and other details may vary based on product size and color.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
-                {results.map((p, i) => (
-                  <ResultCard key={p.id} product={p} priority={i < 4} />
+            {hasFilters && (
+              <div className="mb-3 hidden flex-wrap items-center gap-2 lg:flex">
+                {chips.map((c) => (
+                  <Chip key={c.label} {...c} />
                 ))}
+                <ResultsLink href={clearAll} scroll={false} className="link ml-1 text-[13px]">
+                  Clear all filters
+                </ResultsLink>
               </div>
-              {pageCount > 1 && <Pagination page={page} pageCount={pageCount} href={(n) => toQuery({ ...effective, page: n })} />}
-            </>
-          )}
+            )}
+
+            {total === 0 ? (
+              <NoResults query={params.k} clearHref={hasFilters ? clearAll : undefined} popular={topRated(() => true, 8)} />
+            ) : (
+              <>
+                <h1 className="text-[20px] font-bold leading-[28px]">Results</h1>
+                <p className="mb-3 text-[13px] text-muted">Check each product page for other buying options. Price and other details may vary based on product size and color.</p>
+                {decide.length > 0 && <HelpDecide picks={decide} />}
+                <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+                  {results.map((p, i) => (
+                    <ResultCard key={p.id} product={p} priority={i < 4} />
+                  ))}
+                </div>
+                {pageCount > 1 && <Pagination page={page} pageCount={pageCount} href={(n) => toQuery({ ...effective, page: n })} />}
+              </>
+            )}
+          </ResultsRegion>
         </div>
       </div>
     </div>
-  );
-}
-
-function Chip({ label, href }: { label: string; href: string }) {
-  return (
-    <Link
-      href={href}
-      aria-label={`Remove filter ${label}`}
-      className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#8d9096] bg-[#f0f2f2] py-[4px] pl-3 pr-2 text-[13px] hover:bg-[#e3e6e6]"
-    >
-      {label}
-      <X size={14} />
-    </Link>
-  );
-}
-
-function Box({ on }: { on: boolean }) {
-  return (
-    <span aria-hidden className={`flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-[3px] border ${on ? "border-link bg-link text-white" : "border-[#888c8c] bg-white"}`}>
-      {on && <svg viewBox="0 0 12 12" className="h-[10px] w-[10px]"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" strokeWidth="2" /></svg>}
-    </span>
   );
 }
 
@@ -203,12 +204,17 @@ function FilterPanel({
   categories: { slug: string; name: string; count: number }[];
 }) {
   const heading = "mb-[6px] text-[14px] font-bold";
-  const item = "flex items-center gap-2 py-[3px] text-[14px] hover:text-link-hover";
+  const item = "flex min-h-[30px] items-center gap-2 py-[3px] text-[14px] transition-colors duration-150 hover:text-link-hover lg:min-h-0";
   const selectedBrands = params.brand ?? [];
-  const visibleBrands = brands.slice(0, 8);
-  const moreBrands = brands.slice(8);
   const brandLink = (b: string) =>
     withChange(params, { brand: selectedBrands.includes(b) ? selectedBrands.filter((x) => x !== b) : [...selectedBrands, b] });
+  const brandItem = (b: { name: string }) => (
+    <li key={b.name}>
+      <FilterLink href={brandLink(b.name)} on={selectedBrands.includes(b.name)} kind="check" className={item}>
+        {b.name}
+      </FilterLink>
+    </li>
+  );
 
   return (
     <div className="space-y-5">
@@ -217,20 +223,16 @@ function FilterPanel({
         <ul>
           {params.dept || params.cat ? (
             <li>
-              <Link href={withChange(params, { dept: undefined, cat: undefined })} className="flex items-center py-[3px] text-[14px] hover:text-link-hover">
+              <FilterLink href={withChange(params, { dept: undefined, cat: undefined })} on={false} kind="text" className={item}>
                 ‹ Any Department
-              </Link>
+              </FilterLink>
             </li>
           ) : null}
           {categories.map((c) => (
             <li key={c.slug}>
-              <Link
-                href={withChange(params, { cat: params.cat === c.slug ? undefined : c.slug })}
-                aria-current={params.cat === c.slug ? "true" : undefined}
-                className={`block py-[3px] pl-3 text-[14px] hover:text-link-hover ${params.cat === c.slug ? "font-bold" : ""}`}
-              >
-                {c.name} <span className="text-muted">({c.count})</span>
-              </Link>
+              <FilterLink href={withChange(params, { cat: params.cat === c.slug ? undefined : c.slug })} on={params.cat === c.slug} kind="text" className={`${item} pl-3`}>
+                {c.name} <span className="font-normal text-muted">({c.count})</span>
+              </FilterLink>
             </li>
           ))}
         </ul>
@@ -241,14 +243,16 @@ function FilterPanel({
         <ul>
           {[4, 3, 2].map((r) => (
             <li key={r}>
-              <Link href={withChange(params, { rating: params.rating === r ? undefined : r })} aria-current={params.rating === r ? "true" : undefined} className={item}>
-                <span className="inline-flex" role="img" aria-label={`${r} stars & up`}>
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <Star key={i} size={18} strokeWidth={1.2} className={i < r ? "fill-star text-star" : "text-star"} />
-                  ))}
+              <FilterLink href={withChange(params, { rating: params.rating === r ? undefined : r })} on={params.rating === r} kind="text" className={item}>
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-flex" role="img" aria-label={`${r} stars & up`}>
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star key={i} size={18} strokeWidth={1.2} className={i < r ? "fill-star text-star" : "text-star"} />
+                    ))}
+                  </span>
+                  & Up
                 </span>
-                <span className={params.rating === r ? "font-bold" : ""}>& Up</span>
-              </Link>
+              </FilterLink>
             </li>
           ))}
         </ul>
@@ -257,27 +261,11 @@ function FilterPanel({
       {brands.length > 0 && (
         <section>
           <h2 className={heading}>Brands</h2>
-          <ul>
-            {visibleBrands.map((b) => (
-              <li key={b.name}>
-                <Link href={brandLink(b.name)} className={item} role="checkbox" aria-checked={selectedBrands.includes(b.name)}>
-                  <Box on={selectedBrands.includes(b.name)} /> {b.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {moreBrands.length > 0 && (
+          <ul>{brands.slice(0, 8).map(brandItem)}</ul>
+          {brands.length > 8 && (
             <details className="group">
               <summary className="link cursor-pointer list-none py-1 text-[13px] group-open:hidden">⌄ See more</summary>
-              <ul>
-                {moreBrands.map((b) => (
-                  <li key={b.name}>
-                    <Link href={brandLink(b.name)} className={item} role="checkbox" aria-checked={selectedBrands.includes(b.name)}>
-                      <Box on={selectedBrands.includes(b.name)} /> {b.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <ul>{brands.slice(8).map(brandItem)}</ul>
             </details>
           )}
         </section>
@@ -288,9 +276,9 @@ function FilterPanel({
         <ul>
           {PRICE_BUCKETS.map((b) => (
             <li key={b.value}>
-              <Link href={withChange(params, { price: params.price === b.value ? undefined : b.value })} aria-current={params.price === b.value ? "true" : undefined} className={`${item} ${params.price === b.value ? "font-bold" : ""}`}>
+              <FilterLink href={withChange(params, { price: params.price === b.value ? undefined : b.value })} on={params.price === b.value} kind="text" className={item}>
                 {b.label}
-              </Link>
+              </FilterLink>
             </li>
           ))}
         </ul>
@@ -298,9 +286,9 @@ function FilterPanel({
 
       <section>
         <h2 className={heading}>Deals & Discounts</h2>
-        <Link href={withChange(params, { deals: !params.deals || undefined })} className={item} role="checkbox" aria-checked={!!params.deals}>
-          <Box on={!!params.deals} /> Today&apos;s Deals
-        </Link>
+        <FilterLink href={withChange(params, { deals: !params.deals || undefined })} on={!!params.deals} kind="check" className={item}>
+          Today&apos;s Deals
+        </FilterLink>
       </section>
     </div>
   );
@@ -308,13 +296,13 @@ function FilterPanel({
 
 function Pagination({ page, pageCount, href }: { page: number; pageCount: number; href: (n: number) => string }) {
   const nums = [...new Set([1, page - 1, page, page + 1, pageCount])].filter((n) => n >= 1 && n <= pageCount).sort((a, b) => a - b);
-  const base = "flex h-[42px] min-w-[42px] items-center justify-center rounded-lg border px-3 text-[14px]";
+  const base = "flex h-[42px] min-w-[42px] items-center justify-center rounded-lg border px-3 text-[14px] transition-colors duration-150";
   return (
     <nav aria-label="Pagination" className="mt-8 flex flex-wrap items-center justify-center gap-2">
       {page > 1 ? (
-        <Link href={href(page - 1)} className={`${base} border-line hover:bg-[#f7fafa]`}>‹ Previous</Link>
+        <ResultsLink href={href(page - 1)} className={`${base} border-line hover:bg-[#f7fafa]`}>‹ Previous</ResultsLink>
       ) : (
-        <span className={`${base} border-[#e7e7e7] text-[#8d9096]`}>‹ Previous</span>
+        <span aria-disabled="true" className={`${base} border-[#e7e7e7] text-[#8d9096]`}>‹ Previous</span>
       )}
       {nums.map((n, i) => (
         <span key={n} className="contents">
@@ -322,14 +310,14 @@ function Pagination({ page, pageCount, href }: { page: number; pageCount: number
           {n === page ? (
             <span aria-current="page" className={`${base} border-ink font-bold`}>{n}</span>
           ) : (
-            <Link href={href(n)} className={`${base} border-transparent hover:bg-[#f7fafa]`}>{n}</Link>
+            <ResultsLink href={href(n)} className={`${base} border-transparent hover:bg-[#f7fafa]`}>{n}</ResultsLink>
           )}
         </span>
       ))}
       {page < pageCount ? (
-        <Link href={href(page + 1)} className={`${base} border-line hover:bg-[#f7fafa]`}>Next ›</Link>
+        <ResultsLink href={href(page + 1)} className={`${base} border-line hover:bg-[#f7fafa]`}>Next ›</ResultsLink>
       ) : (
-        <span className={`${base} border-[#e7e7e7] text-[#8d9096]`}>Next ›</span>
+        <span aria-disabled="true" className={`${base} border-[#e7e7e7] text-[#8d9096]`}>Next ›</span>
       )}
     </nav>
   );

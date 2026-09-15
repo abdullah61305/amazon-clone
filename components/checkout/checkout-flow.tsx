@@ -154,8 +154,8 @@ export function CheckoutFlow() {
             <Field label="Street address" name="street" autoComplete="street-address" placeholder="Street address or P.O. Box" value={address.street} error={touched ? errors.street : undefined} onChange={(v) => setAddress({ ...address, street: v })} className="col-span-2" />
             <Field label="City" name="city" autoComplete="address-level2" value={address.city} error={touched ? errors.city : undefined} onChange={(v) => setAddress({ ...address, city: v })} className="col-span-2 sm:col-span-1" />
             <div className="col-span-2 grid grid-cols-2 gap-3 sm:col-span-1">
-              <Field label="State" name="state" autoComplete="address-level1" placeholder="NY" maxLength={2} value={address.state} error={touched ? errors.state : undefined} onChange={(v) => setAddress({ ...address, state: v })} />
-              <Field label="ZIP Code" name="zip" autoComplete="postal-code" inputMode="numeric" maxLength={5} value={address.zip} error={touched ? errors.zip : undefined} onChange={(v) => setAddress({ ...address, zip: v.replace(/\D/g, "") })} />
+              <Field label="State" name="state" autoComplete="address-level1" autoCapitalize="characters" placeholder="NY" maxLength={2} value={address.state} error={touched ? errors.state : undefined} onChange={(v) => setAddress({ ...address, state: v })} />
+              <Field label="ZIP Code" name="zip" autoComplete="postal-code" inputMode="numeric" pattern="[0-9]*" enterKeyHint="done" maxLength={5} value={address.zip} error={touched ? errors.zip : undefined} onChange={(v) => setAddress({ ...address, zip: v.replace(/\D/g, "") })} />
             </div>
             <div className="col-span-2 flex flex-wrap items-center gap-3">
               <button type="submit" className="btn-yellow px-5 py-2">

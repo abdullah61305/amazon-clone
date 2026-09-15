@@ -25,11 +25,16 @@
   --color-badge: #c45500;
   --color-focus: #007185;
 
+  /* One easing curve for every drawer, dropdown, toast and hover so the app moves as one system. */
+  --ease-amzn: cubic-bezier(0.2, 0, 0, 1);
   --animate-shimmer: shimmer 1.4s ease-in-out infinite;
-  --animate-slide-in-left: slide-in-left 0.2s ease-out;
-  --animate-slide-in-right: slide-in-right 0.22s ease-out;
-  --animate-fade-in: fade-in 0.15s ease-out;
-  --animate-rise: rise 0.2s ease-out;
+  --animate-slide-in-left: slide-in-left 0.22s var(--ease-amzn);
+  --animate-slide-in-right: slide-in-right 0.22s var(--ease-amzn);
+  --animate-fade-in: fade-in 0.15s var(--ease-amzn);
+  --animate-rise: rise 0.2s var(--ease-amzn);
+  --animate-sink: sink 0.16s var(--ease-amzn) forwards;
+  --animate-bump: bump 0.18s var(--ease-amzn);
+  --animate-countdown: countdown 8s linear forwards;
 
   @keyframes shimmer {
     0% { background-position: -400px 0; }
@@ -51,6 +56,19 @@
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
+  @keyframes sink {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(8px); }
+  }
+  @keyframes bump {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  @keyframes countdown {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+  }
 }
 
 html {
@@ -67,16 +85,16 @@ body {
 
 @layer components {
   .btn-yellow {
-    @apply inline-flex items-center justify-center rounded-full border border-[#fcd200] bg-yellow px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-colors hover:bg-yellow-hover disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center rounded-full border border-[#fcd200] bg-yellow px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-[background-color,transform] duration-100 ease-(--ease-amzn) hover:bg-yellow-hover active:scale-[.97] disabled:cursor-not-allowed disabled:border-[#f2e2a0] disabled:bg-[#fff3b8] disabled:text-[#8d9096] disabled:shadow-none disabled:active:scale-100;
   }
   .btn-orange {
-    @apply inline-flex items-center justify-center rounded-full border border-[#ff8f00] bg-orange px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-colors hover:bg-orange-hover disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center rounded-full border border-[#ff8f00] bg-orange px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-[background-color,transform] duration-100 ease-(--ease-amzn) hover:bg-orange-hover active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-white {
-    @apply inline-flex items-center justify-center rounded-full border border-line bg-white px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-colors hover:bg-[#f7fafa] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center rounded-full border border-line bg-white px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-[background-color,transform] duration-100 ease-(--ease-amzn) hover:bg-[#f7fafa] active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .link {
-    @apply text-link hover:text-link-hover hover:underline;
+    @apply text-link transition-colors duration-150 hover:text-link-hover hover:underline;
   }
   .card {
     @apply bg-white;
@@ -88,6 +106,12 @@ body {
   .field {
     @apply w-full rounded-lg border border-[#888c8c] bg-white px-3 py-[7px] text-[14px] shadow-[0_1px_2px_rgba(15,17,17,.15)_inset] outline-none focus:border-focus focus:shadow-[0_0_0_3px_#c8f3fa,0_1px_2px_rgba(15,17,17,.15)_inset];
   }
+}
+
+/* Results dim while a filter/sort/page navigation renders (see components/results/filter-links.tsx). */
+html[data-results-pending] [data-results] {
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 :focus-visible {

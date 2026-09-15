@@ -59,13 +59,17 @@ export function CartView({ recommendations }: { recommendations: Product[] }) {
             )}
 
             {notice && (
-              <div className="flex animate-fade-in flex-wrap items-center gap-x-2 border-b border-line py-3 text-[14px]" role="status">
-                <span>
-                  <span className="text-link">{notice.title.length > 60 ? `${notice.title.slice(0, 60)}…` : notice.title}</span> {notice.text}
-                </span>
-                <button type="button" className="font-bold text-link hover:text-link-hover hover:underline" onClick={notice.undo}>
-                  Undo
-                </button>
+              <div key={notice.title + notice.text} className="relative animate-rise overflow-hidden border-b border-line" role="status">
+                <div className="flex flex-wrap items-center gap-x-2 py-3 text-[14px]">
+                  <span>
+                    <span className="text-link">{notice.title.length > 60 ? `${notice.title.slice(0, 60)}…` : notice.title}</span> {notice.text}
+                  </span>
+                  <button type="button" className="btn-white min-h-[32px] px-4 py-[3px] font-bold" onClick={notice.undo}>
+                    Undo
+                  </button>
+                </div>
+                {/* Visible time left to undo (matches the 8s timeout in cart-context). */}
+                <div className="absolute inset-x-0 bottom-0 h-[3px] origin-left animate-countdown bg-link" aria-hidden />
               </div>
             )}
 
@@ -191,9 +195,9 @@ function CartRow({ line: l }: { line: CartLine }) {
   const { setQty, remove, saveForLater } = useCart();
   const href = productHref({ id: l.productId, slug: l.slug });
   const max = Math.min(MAX_QTY, l.stock);
-  const action = "text-[12px] text-link hover:text-link-hover hover:underline";
+  const action = "min-h-[32px] text-[13px] text-link hover:text-link-hover hover:underline sm:min-h-0 sm:text-[12px]";
   return (
-    <li className="flex gap-3 border-b border-line py-4 last:border-b-0 sm:gap-5">
+    <li className="flex animate-fade-in gap-3 border-b border-line py-4 last:border-b-0 sm:gap-5">
       <Link href={href} className="relative h-[110px] w-[110px] shrink-0 sm:h-[180px] sm:w-[180px]">
         <Image src={l.image} alt="" fill sizes="180px" className="object-contain" />
       </Link>
@@ -214,13 +218,13 @@ function CartRow({ line: l }: { line: CartLine }) {
           </p>
         )}
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <div className="flex h-[32px] items-center overflow-hidden rounded-full border-[3px] border-yellow" role="group" aria-label="Quantity">
+          <div className="flex h-[38px] items-center overflow-hidden rounded-full border-[3px] border-yellow sm:h-[32px]" role="group" aria-label="Quantity">
             {l.qty === 1 ? (
-              <button type="button" aria-label={`Delete ${l.title}`} className="flex h-full w-[32px] items-center justify-center hover:bg-[#f7fafa]" onClick={() => remove(l.key)}>
+              <button type="button" aria-label={`Delete ${l.title}`} className="flex h-full w-[40px] items-center justify-center transition-colors hover:bg-[#f7fafa] active:bg-[#eaeded] sm:w-[32px]" onClick={() => remove(l.key)}>
                 <Trash2 size={15} />
               </button>
             ) : (
-              <button type="button" aria-label="Decrease quantity" className="flex h-full w-[32px] items-center justify-center hover:bg-[#f7fafa]" onClick={() => setQty(l.key, l.qty - 1)}>
+              <button type="button" aria-label="Decrease quantity" className="flex h-full w-[40px] items-center justify-center transition-colors hover:bg-[#f7fafa] active:bg-[#eaeded] sm:w-[32px]" onClick={() => setQty(l.key, l.qty - 1)}>
                 <Minus size={16} />
               </button>
             )}
@@ -232,7 +236,7 @@ function CartRow({ line: l }: { line: CartLine }) {
               aria-label="Increase quantity"
               disabled={l.qty >= max}
               title={l.qty >= max ? `Limit ${max} per customer` : undefined}
-              className="flex h-full w-[32px] items-center justify-center hover:bg-[#f7fafa] disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-full w-[40px] items-center justify-center transition-colors hover:bg-[#f7fafa] active:bg-[#eaeded] disabled:cursor-not-allowed disabled:opacity-40 sm:w-[32px]"
               onClick={() => setQty(l.key, l.qty + 1)}
             >
               <Plus size={16} />

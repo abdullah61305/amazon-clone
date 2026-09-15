@@ -8,6 +8,19 @@ import type { Suggestion } from "@/lib/catalog";
 
 type Dept = { slug: string; name: string };
 
+/** Bold the part of a product title that matches what was typed. */
+function highlight(text: string, q: string) {
+  const i = q ? text.toLowerCase().indexOf(q) : -1;
+  if (i < 0) return text;
+  return (
+    <>
+      {text.slice(0, i)}
+      <b>{text.slice(i, i + q.length)}</b>
+      {text.slice(i + q.length)}
+    </>
+  );
+}
+
 /** `scoped`: the desktop bar shows (and searches within) the department dropdown; the phone bar always searches everything. */
 export function SearchBar({ departments, scoped = true }: { departments: Dept[]; scoped?: boolean }) {
   const router = useRouter();
@@ -47,7 +60,7 @@ export function SearchBar({ departments, scoped = true }: { departments: Dept[];
         // Suggestions are an enhancement: on failure the plain search still works.
         if (!ctrl.signal.aborted) setItems([]);
       }
-    }, 120);
+    }, 180);
     return () => {
       clearTimeout(t);
       ctrl.abort();
@@ -168,7 +181,7 @@ export function SearchBar({ departments, scoped = true }: { departments: Dept[];
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 top-[40px] z-40 overflow-hidden rounded-b-md border border-[#cdcdcd] bg-white py-1 text-ink shadow-[0_2px_4px_rgba(0,0,0,.13)]"
+          className="absolute left-0 right-0 top-[40px] z-40 animate-fade-in overflow-hidden rounded-b-md border border-[#cdcdcd] bg-white py-1 text-ink shadow-[0_2px_4px_rgba(0,0,0,.13)]"
           onMouseDown={(e) => e.preventDefault()}
         >
           {queries.map((s, i) => {
@@ -213,8 +226,8 @@ export function SearchBar({ departments, scoped = true }: { departments: Dept[];
                 onMouseEnter={() => setActive(i)}
                 onClick={() => choose(s)}
               >
-                <Image src={s.thumbnail} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded bg-[#f7f7f7] object-contain" />
-                <span className="truncate">{s.title}</span>
+                <Image src={s.thumbnail} alt="" width={36} height={36} unoptimized loading="eager" className="h-9 w-9 shrink-0 rounded bg-[#f7f7f7] object-contain" />
+                <span className="truncate">{highlight(s.title, q)}</span>
               </li>
             );
           })}

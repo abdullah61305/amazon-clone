@@ -35,17 +35,17 @@ export function Hero({ slides }: { slides: Slide[] }) {
           style={{ background: `linear-gradient(120deg, ${s.from}, ${s.to})` }}
         >
           <div className="mx-auto flex h-full max-w-[1500px] items-start justify-between gap-4 px-6 pt-6 sm:px-16 sm:pt-12 lg:px-24">
-            <div className="max-w-[46%] text-white sm:max-w-[40%]">
+            <div className="max-w-[52%] text-white sm:max-w-[40%]">
               <p className="text-[12px] font-bold uppercase tracking-wide opacity-90 sm:text-[16px]">{s.eyebrow}</p>
               <h2 className="mt-1 text-[22px] font-bold leading-[1.05] sm:mt-2 sm:text-[44px] lg:text-[54px]">{s.title}</h2>
               <Link href={s.href} tabIndex={n === i ? 0 : -1} className="btn-yellow mt-3 px-5 text-[13px] sm:mt-6 sm:py-2 sm:text-[15px]">
                 {s.cta}
               </Link>
             </div>
-            <div className="relative grid h-[150px] flex-1 grid-cols-3 items-start gap-2 sm:h-[240px] sm:gap-4 lg:h-[300px]">
+            <div className="relative grid h-[170px] flex-1 grid-cols-1 items-start gap-2 sm:h-[240px] sm:grid-cols-3 sm:gap-4 lg:h-[300px]">
               {s.images.slice(0, 3).map((src, k) => (
-                <div key={src} className={`relative h-full rounded-xl bg-white/85 shadow-lg ${k === 1 ? "mt-6 sm:mt-10" : ""}`}>
-                  <Image src={src} alt="" fill sizes="(max-width: 640px) 18vw, 220px" className="object-contain p-2 sm:p-4" priority={n === 0} />
+                <div key={src} className={`relative h-full rounded-xl bg-white/85 shadow-lg ${k === 1 ? "sm:mt-10" : ""} ${k > 0 ? "hidden sm:block" : ""}`}>
+                  <Image src={src} alt="" fill sizes="(max-width: 640px) 45vw, 220px" className="object-contain p-2 sm:p-4" priority={n === 0} />
                 </div>
               ))}
             </div>
@@ -60,9 +60,9 @@ export function Hero({ slides }: { slides: Slide[] }) {
       <button type="button" aria-label="Next slide" onClick={() => go(1)} className="absolute right-0 top-0 hidden h-[250px] w-[80px] items-center justify-center hover:text-ink sm:flex lg:h-[270px]">
         <ChevronRight size={48} strokeWidth={1.2} className="text-white drop-shadow" />
       </button>
-      <div className="absolute bottom-[48%] left-1/2 flex -translate-x-1/2 gap-2 sm:hidden">
+      <div className="absolute left-6 top-[232px] flex gap-2 sm:hidden">
         {slides.map((s, n) => (
-          <button key={s.title} type="button" aria-label={`Slide ${n + 1}`} onClick={() => setI(n)} className={`h-2 w-2 rounded-full ${n === i ? "bg-white" : "bg-white/50"}`} />
+          <button key={s.title} type="button" aria-label={`Slide ${n + 1}`} onClick={() => setI(n)} className={`h-2 rounded-full transition-[width] duration-200 ease-(--ease-amzn) ${n === i ? "w-5 bg-white" : "w-2 bg-white/50"}`} />
         ))}
       </div>
     </section>

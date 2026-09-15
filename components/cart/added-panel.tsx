@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import { useCart } from "@/components/cart/cart-context";
 import { usd } from "@/lib/format";
@@ -18,7 +18,19 @@ export function AddedToCartPanel() {
   const { added, dismissAdded, subtotal, count } = useCart();
   const pathname = usePathname();
   const [hover, setHover] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const lastPath = useRef(pathname);
+  const addedKey = added ? `${added.line.key}-${added.line.qty}` : "";
+  const [shownKey, setShownKey] = useState(addedKey);
+  if (shownKey !== addedKey) {
+    setShownKey(addedKey);
+    setLeaving(false);
+  }
+
+  const close = useCallback(() => {
+    setLeaving(true);
+    setTimeout(dismissAdded, 160);
+  }, [dismissAdded]);
 
   useEffect(() => {
     if (lastPath.current !== pathname) {
@@ -29,9 +41,9 @@ export function AddedToCartPanel() {
 
   useEffect(() => {
     if (!added || hover) return;
-    const t = setTimeout(dismissAdded, 6000);
+    const t = setTimeout(close, 6000);
     return () => clearTimeout(t);
-  }, [added, hover, dismissAdded]);
+  }, [added, hover, close]);
 
   if (!added || pathname === "/cart" || pathname.startsWith("/checkout")) return null;
   const { line } = added;
@@ -39,14 +51,14 @@ export function AddedToCartPanel() {
 
   return (
     <aside
-      key={`${line.key}-${line.qty}`}
+      key={shownKey}
       aria-live="polite"
       aria-label="Added to cart"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className="fixed inset-x-0 bottom-0 z-[60] animate-rise rounded-t-xl border border-line bg-white p-4 shadow-[0_-4px_24px_rgba(15,17,17,.25)] sm:bottom-auto sm:left-auto sm:right-4 sm:top-[108px] sm:w-[380px] sm:rounded-lg sm:shadow-[0_4px_24px_rgba(15,17,17,.25)]"
+      className={`fixed inset-x-0 bottom-0 z-[60] ${leaving ? "animate-sink" : "animate-rise"} rounded-t-xl border border-line bg-white p-4 shadow-[0_-4px_24px_rgba(15,17,17,.25)] sm:bottom-auto sm:left-auto sm:right-4 sm:top-[108px] sm:w-[380px] sm:rounded-lg sm:shadow-[0_4px_24px_rgba(15,17,17,.25)]`}
     >
-      <button type="button" onClick={dismissAdded} aria-label="Close" className="absolute right-2 top-2 rounded-full p-1 text-muted hover:bg-[#f0f2f2]">
+      <button type="button" onClick={close} aria-label="Close" className="absolute right-2 top-2 rounded-full p-1 text-muted hover:bg-[#f0f2f2]">
         <X size={18} />
       </button>
       <div className="flex gap-3">

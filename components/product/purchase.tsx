@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Lock, MapPin } from "lucide-react";
-import type { Product } from "@/lib/catalog";
+import { deliveryDays, type Product } from "@/lib/catalog";
 import { deliveryDate, splitPrice, usd } from "@/lib/format";
 import { MAX_QTY, useCart } from "@/components/cart/cart-context";
 import { toCartLine } from "@/components/cart/quick-add";
@@ -140,7 +140,7 @@ export function Purchase({ product: p, header, details }: { product: Product; he
           {clock ? (
             <>
               <p className="mt-3 text-[14px] leading-[20px]">
-                FREE delivery <b>{deliveryDate(fastDays + 2, clock.now)}</b>. Order within <span className="text-stock">{clock.cutoff}</span>
+                FREE delivery <b>{deliveryDate(deliveryDays(p), clock.now)}</b>. Order within <span className="text-stock">{clock.cutoff}</span>
               </p>
               <p className="mt-2 text-[14px] leading-[20px]">
                 Or fastest delivery <b>{deliveryDate(fastDays, clock.now)}</b>
