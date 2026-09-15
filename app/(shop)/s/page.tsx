@@ -173,7 +173,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             )}
 
             {total === 0 ? (
-              <NoResults query={params.k} clearHref={hasFilters ? clearAll : undefined} popular={topRated(() => true, 8)} />
+              <NoResults query={params.k} clearHref={hasFilters ? clearAll : undefined} popular={topRated(() => true, 8)} suggestion={params.exact && params.k ? didYouMean(params.k) : null} />
             ) : (
               <>
                 <h1 className="text-[20px] font-bold leading-[28px]">Results</h1>

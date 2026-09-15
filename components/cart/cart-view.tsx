@@ -20,11 +20,27 @@ export function CartView({ recommendations }: { recommendations: Product[] }) {
   const empty = lines.length === 0;
   const remaining = FREE_SHIPPING - subtotal;
 
+  const noticeBar = notice && (
+            <div key={notice.title + notice.text} className="relative animate-rise overflow-hidden border-b border-line" role="status">
+              <div className="flex flex-wrap items-center gap-x-2 py-3 text-[14px]">
+                <span>
+                  <span className="text-link">{notice.title.length > 60 ? `${notice.title.slice(0, 60)}…` : notice.title}</span> {notice.text}
+                </span>
+                <button type="button" className="btn-white min-h-[32px] px-4 py-[3px] font-bold" onClick={notice.undo}>
+                  Undo
+                </button>
+              </div>
+              {/* Visible time left to undo (matches the 8s timeout in cart-context). */}
+              <div className="absolute inset-x-0 bottom-0 h-[3px] origin-left animate-countdown bg-link" aria-hidden />
+            </div>
+  );
+
   return (
     <div className="flex-1 bg-page px-2 py-4 sm:px-5">
       <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">
         <div className="space-y-5">
           <section className="card px-4 pb-4 pt-5 sm:px-5" aria-labelledby="cart-heading">
+            {empty && noticeBar}
             {empty ? (
               <div className="flex flex-col items-center gap-6 py-6 sm:flex-row sm:items-center sm:py-4">
                 <EmptyCartArt />
@@ -58,20 +74,7 @@ export function CartView({ recommendations }: { recommendations: Product[] }) {
               </>
             )}
 
-            {notice && (
-              <div key={notice.title + notice.text} className="relative animate-rise overflow-hidden border-b border-line" role="status">
-                <div className="flex flex-wrap items-center gap-x-2 py-3 text-[14px]">
-                  <span>
-                    <span className="text-link">{notice.title.length > 60 ? `${notice.title.slice(0, 60)}…` : notice.title}</span> {notice.text}
-                  </span>
-                  <button type="button" className="btn-white min-h-[32px] px-4 py-[3px] font-bold" onClick={notice.undo}>
-                    Undo
-                  </button>
-                </div>
-                {/* Visible time left to undo (matches the 8s timeout in cart-context). */}
-                <div className="absolute inset-x-0 bottom-0 h-[3px] origin-left animate-countdown bg-link" aria-hidden />
-              </div>
-            )}
+            {!empty && noticeBar}
 
             {!empty && (
               <>

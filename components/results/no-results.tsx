@@ -5,7 +5,7 @@ import { MiniCard } from "@/components/product-card";
 import { Shelf } from "@/components/carousel";
 
 /** Amazon shows unrelated sponsored products here; we help the shopper recover instead. */
-export function NoResults({ query, clearHref, popular }: { query?: string; clearHref?: string; popular: Product[] }) {
+export function NoResults({ query, clearHref, popular, suggestion }: { query?: string; clearHref?: string; popular: Product[]; suggestion?: string | null }) {
   return (
     <div className="animate-fade-in">
       <div className="flex flex-col gap-4 rounded-lg border border-line p-5 sm:flex-row sm:items-start">
@@ -14,6 +14,15 @@ export function NoResults({ query, clearHref, popular }: { query?: string; clear
           <h1 className="text-[20px] font-bold leading-[28px]">
             {query ? <>No results for &quot;{query}&quot;</> : "No products match these filters"}
           </h1>
+          {suggestion && (
+            <p className="mt-1 text-[16px]">
+              Did you mean{" "}
+              <Link href={`/s?k=${encodeURIComponent(suggestion)}`} className="link font-bold italic">
+                {suggestion}
+              </Link>
+              ?
+            </p>
+          )}
           {clearHref ? (
             <p className="mt-1 text-[14px]">
               Your filters may be too narrow.{" "}

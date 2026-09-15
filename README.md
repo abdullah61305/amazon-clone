@@ -9,8 +9,8 @@ A rebuild of the Amazon.com shopping journey — **homepage → search → resul
 | Surface | Behaviour |
 |---|---|
 | Header | Sticky two-belt nav, department-scoped search, "All" drawer with sub-menus, Account & Lists flyout, live cart count |
-| Search | Typeahead suggestions (keyboard accessible), typo correction ("iphnoe" → "iphone"), stemming |
-| Results | URL-driven filters (department, rating, brand, price, deals), sort, pagination, removable filter chips, mobile filter sheet |
+| Search | Typeahead suggestions with match highlighting (keyboard accessible), typo correction ("iphnoe" → "iphone") with "Search instead for" the original, stemming |
+| Results | URL-driven filters (department, rating, brand, price, deals — combined with AND), sort, pagination, removable filter chips with instant feedback, mobile filter sheet, **Help me decide** (lowest price / best rated / best value from the current results) |
 | Product page | Hover-swap gallery + full-view lightbox, swipe gallery on phones, variations that change price, buy box with delivery cut-off, reviews histogram, related shelf, sticky mobile add-to-cart |
 | Cart | Instant quantity stepper, delete / save for later with **Undo**, saved-for-later list, free-delivery progress |
 | Checkout | Amazon-style 3-step checkout with validation, delivery speeds, tax and totals, confirmation and Your Orders — **simulated, no payment details collected** |
@@ -22,6 +22,8 @@ A rebuild of the Amazon.com shopping journey — **homepage → search → resul
 - **Undo** after deleting or saving for later, instead of a dead "was removed" line.
 - **Active filter chips** and shareable, back-button-friendly filter URLs.
 - **Skeletons and image placeholders** instead of blank cards while content loads.
+- **Help me decide** picks one product per goal from the current results and says why in one sentence.
+- **Motion with purpose**: one easing curve, cart icon bump, instant filter/checkbox feedback while results load, visible Undo countdown — every animation under 250ms.
 - **Phones get a phone layout** (search row, filter sheet, swipe gallery, sticky CTA), not a shrunken desktop page.
 
 ## Stack
