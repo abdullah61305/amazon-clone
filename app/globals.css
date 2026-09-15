@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/* Palette sampled from amazon.com (header belts, page ground, links, buttons, price, stock). */
+@theme {
+  --font-sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+
+  --color-nav: #131921;
+  --color-nav-2: #232f3e;
+  --color-nav-3: #37475a;
+  --color-page: #e3e6e6;
+  --color-ink: #0f1111;
+  --color-muted: #565959;
+  --color-line: #d5d9d9;
+  --color-link: #007185;
+  --color-link-hover: #c7511f;
+  --color-search: #febd69;
+  --color-search-hover: #f3a847;
+  --color-yellow: #ffd814;
+  --color-yellow-hover: #f7ca00;
+  --color-orange: #ffa41c;
+  --color-orange-hover: #fa8900;
+  --color-deal: #cc0c39;
+  --color-stock: #007600;
+  --color-star: #de7921;
+  --color-badge: #c45500;
+  --color-focus: #007185;
+
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+  --animate-slide-in-left: slide-in-left 0.2s ease-out;
+  --animate-slide-in-right: slide-in-right 0.22s ease-out;
+  --animate-fade-in: fade-in 0.15s ease-out;
+  --animate-rise: rise 0.2s ease-out;
+
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  @keyframes slide-in-left {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: #fff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+@layer components {
+  .btn-yellow {
+    @apply inline-flex items-center justify-center rounded-full border border-[#fcd200] bg-yellow px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-colors hover:bg-yellow-hover disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-orange {
+    @apply inline-flex items-center justify-center rounded-full border border-[#ff8f00] bg-orange px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-colors hover:bg-orange-hover disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-white {
+    @apply inline-flex items-center justify-center rounded-full border border-line bg-white px-4 py-[6px] text-[13px] text-ink shadow-[0_2px_5px_0_rgba(213,217,217,.5)] transition-colors hover:bg-[#f7fafa] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .link {
+    @apply text-link hover:text-link-hover hover:underline;
+  }
+  .card {
+    @apply bg-white;
+  }
+  .skeleton {
+    @apply animate-shimmer rounded bg-[#eaeded] bg-[length:800px_100%] bg-no-repeat;
+    background-image: linear-gradient(90deg, #eaeded 0px, #f5f7f7 200px, #eaeded 400px);
+  }
+  .field {
+    @apply w-full rounded-lg border border-[#888c8c] bg-white px-3 py-[7px] text-[14px] shadow-[0_1px_2px_rgba(15,17,17,.15)_inset] outline-none focus:border-focus focus:shadow-[0_0_0_3px_#c8f3fa,0_1px_2px_rgba(15,17,17,.15)_inset];
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
