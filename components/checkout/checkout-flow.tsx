@@ -27,6 +27,23 @@ const PAYMENT = [
 ] as const;
 const CARD_FORM_ID = "checkout-card-form";
 
+// States for the cities the delivery-ZIP lookup knows, so the sample address stays consistent with the chosen ZIP.
+const CITY_STATE: Record<string, string> = {
+  "New York": "NY",
+  "Los Angeles": "CA",
+  "San Francisco": "CA",
+  Chicago: "IL",
+  Miami: "FL",
+  Seattle: "WA",
+  Austin: "TX",
+  Boston: "MA",
+};
+
+function sampleLocation(label: string, zip: string) {
+  const city = label.replace(/\s*\d{5}$/, "");
+  return CITY_STATE[city] ? { city, state: CITY_STATE[city], zip } : { city: "New York", state: "NY", zip: "10001" };
+}
+
 const blankAddress: Address = { name: "", street: "", city: "", state: "", zip: "" };
 
 function validate(a: Address) {
@@ -177,9 +194,7 @@ export function CheckoutFlow() {
                   setAddress({
                     name: account ? `${account.name} Lee` : "Jordan Lee",
                     street: "350 5th Ave",
-                    city: deliveryLabel.replace(/\s*\d{5}$/, "") || "New York",
-                    state: "NY",
-                    zip: deliveryZip,
+                    ...sampleLocation(deliveryLabel, deliveryZip),
                   });
                   setTouched(false);
                 }}
