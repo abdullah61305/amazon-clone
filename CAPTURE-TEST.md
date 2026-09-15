@@ -123,3 +123,21 @@ In `CAPTURE-TEST.md` I'll note this mix-up as something that didn't work the fir
 6. **Built-in slash commands are not logged.** `/rename` does not trigger `UserPromptSubmit`, so it does not appear as a prompt. This does not affect the assignment.
 7. **Possible model-switch lag.** If the model is changed with `/model` right before a prompt, that prompt's entry may show the previous model. The response entry shows the model that actually answered.
 8. **Canary 2's reply did not check anything.** It only said the hooks "should" write the log. The actual check happened in the next turn of session `27d0b51f` (this file).
+
+## 6. Capture bug found while preparing the submission (session `27d0b51f`)
+
+The canary check passed, but a later audit of the main build session against its raw transcript found missed prompts.
+
+- **What went wrong:**
+  - Background-task notifications and subagent reports also fire `UserPromptSubmit`, so the hook logged them as prompts. See `PROMPT num=5, 7, 9, 10`, whose text starts with `<task-notification>` or `<agent-message>`.
+  - The hook numbered turns by counting logged prompt entries. Those extra entries pushed the count ahead of the real turns, so four later human prompts looked "already logged" and were skipped. Later responses were also all numbered 9.
+- **What was missing:** "The research is good…" (the approval to build), "continue where you left off", the Final Polish Pass prompt, the Fast Fixes Pass prompt, and "commit the agent log and prepare the final submission".
+- **Fix (`.claude/hooks/capture-log.js`):**
+  - Notification text is ignored as a prompt.
+  - Turns are matched to logged prompts by content or timestamp instead of by position.
+  - Responses are de-duplicated by text.
+  - Harness markers like "[Request interrupted by user]" are no longer treated as prompts.
+  - Before touching the real log, the fix was dry-run on copies of the log and transcript outside the repo. It left existing entries byte-for-byte unchanged, a second run added nothing, and a notification was ignored.
+- **Recovery (append-only):** the next `Stop` event backfilled the missing prompts from the transcript with their **original** timestamps, as `PROMPT num=11–16` at the end of the file. No existing entry was edited, reordered or deleted, so the log is out of chronological order at that point; the timestamps give the true order.
+- **One extra entry:** the backfill ran before the "[Request interrupted by user]" exclusion was added. `PROMPT num=12` is therefore that harness marker, not something typed. It is left in place rather than deleted.
+- **Parallel subagents:** Claude Code does not send subagent transcripts through these hooks. Progress notes those agents wrote themselves are in `.agent-logs/subagents/`, separate from the hook-generated files. They are notes the agents wrote, not raw captures.

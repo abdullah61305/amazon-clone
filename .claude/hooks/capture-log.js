@@ -53,6 +53,9 @@ function isHumanPrompt(e) {
   return typeof c === 'string' || (Array.isArray(c) && c.some((b) => b.type === 'text'));
 }
 
+// Harness markers written as user entries (e.g. after Esc), not typed prompts.
+const isMarker = (text) => /^\[Request interrupted by user/.test(text.trim());
+
 function promptText(e) {
   const c = e.message.content;
   if (typeof c === 'string') return c;
@@ -71,7 +74,7 @@ function parseTurns(entries) {
   let lastModel = null;
   for (const e of entries) {
     if (e.isSidechain) continue;
-    if (isHumanPrompt(e)) {
+    if (isHumanPrompt(e) && !isMarker(promptText(e))) {
       cur = { prompt: promptText(e), promptTs: e.timestamp, promptModel: lastModel, textsAfterTool: [], allTexts: [], model: null };
       turns.push(cur);
       continue;
@@ -236,32 +239,45 @@ function main() {
     history = turns.slice(0, -1);
   }
 
+  // Background-task and subagent notifications also fire UserPromptSubmit; they are not human prompts.
+  const NOTIFICATION = /^\s*<(task-notification|agent-message)[\s>]/;
   const append = [];
-  const promptCount = () => logged.filter((e) => e.type === 'PROMPT').length + append.filter((e) => e.type === 'PROMPT').length;
-  const hasResponse = (n) => logged.some((e) => e.type === 'RESPONSE' && e.num === n) || append.some((e) => e.type === 'RESPONSE' && e.num === n);
+  const entries = (type) => [...logged, ...append].filter((e) => e.type === type);
   const add = (type, num, ts, model, text) => append.push({ type, num, ts, model, text });
+  const nextNum = () => entries('PROMPT').reduce((m, e) => Math.max(m, e.num), 0) + 1;
+  const same = (a, b) => a.trim() === b.trim();
+  const gap = (a, b) => Math.abs(Date.parse(a) - Date.parse(b));
 
-  // Backfill: completed turns that are missing a prompt or response entry.
-  history.forEach((t, i) => {
-    const n = i + 1;
-    if (n > promptCount()) add('PROMPT', n, t.promptTs, t.promptModel || t.model || fallbackModel(), t.prompt);
-    if (t.response && !hasResponse(n)) add('RESPONSE', n, t.responseTs, t.model || fallbackModel(), t.response);
+  // Match transcript turns to logged prompts by content/time, never by position: counting
+  // entries breaks as soon as a notification is logged or a prompt is missed.
+  const promptEntryFor = (t) =>
+    entries('PROMPT').find((e) => same(e.text, t.prompt) && gap(e.ts, t.promptTs) < 10 * 60000) ||
+    entries('PROMPT').find((e) => !NOTIFICATION.test(e.text) && gap(e.ts, t.promptTs) < 5000);
+  const ensurePrompt = (t) => {
+    const found = promptEntryFor(t);
+    if (found) return found.num;
+    const num = nextNum();
+    add('PROMPT', num, t.promptTs, t.promptModel || t.model || fallbackModel(), t.prompt);
+    return num;
+  };
+  const responseLogged = (text) => entries('RESPONSE').some((e) => same(e.text, text));
+
+  // Backfill: completed turns that are missing a prompt or their final response.
+  history.forEach((t) => {
+    const num = ensurePrompt(t);
+    if (t.response && !responseLogged(t.response)) add('RESPONSE', num, t.responseTs, t.model || fallbackModel(), t.response);
   });
 
   if (event === 'UserPromptSubmit') {
-    const n = history.length + 1;
-    if (n > promptCount()) add('PROMPT', n, new Date().toISOString(), fallbackModel(), input.prompt);
+    const recent = entries('PROMPT').some((e) => same(e.text, input.prompt) && gap(e.ts, new Date().toISOString()) < 10000);
+    if (!NOTIFICATION.test(input.prompt || '') && !recent) add('PROMPT', nextNum(), new Date().toISOString(), fallbackModel(), input.prompt);
   } else if (turns.length) {
     const live = turns[turns.length - 1];
-    const n = turns.length;
-    if (n > promptCount()) add('PROMPT', n, live.promptTs, live.promptModel || live.model || fallbackModel(), live.prompt);
+    const num = ensurePrompt(live);
     const text = live.response || input.last_assistant_message;
-    if (text) {
-      const prev = logged.filter((e) => e.type === 'RESPONSE' && e.num === n).pop();
-      // A Stop can fire more than once for a prompt (e.g. a background task
-      // re-invokes the agent). Log each distinct final response.
-      if (!prev || prev.text !== text) add('RESPONSE', n, (live.response && live.responseTs) || new Date().toISOString(), live.model || fallbackModel(), text);
-    }
+    // A Stop can fire more than once for a prompt (e.g. a background task
+    // re-invokes the agent). Log each distinct final response.
+    if (text && !responseLogged(text)) add('RESPONSE', num, (live.response && live.responseTs) || new Date().toISOString(), live.model || fallbackModel(), text);
   }
 
   if (!append.length) return;
