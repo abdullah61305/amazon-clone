@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Lock, MapPin } from "lucide-react";
 import type { Product } from "@/lib/catalog";
-import { deliveryDate, splitPrice } from "@/lib/format";
+import { deliveryDate, splitPrice, usd } from "@/lib/format";
 import { MAX_QTY, useCart } from "@/components/cart/cart-context";
 import { toCartLine } from "@/components/cart/quick-add";
 import { Price, PrimeCheck } from "@/components/ui";
@@ -86,7 +86,7 @@ export function Purchase({ product: p, header, details }: { product: Product; he
         </div>
         {listPrice && (
           <p className="mt-1 text-[12px] text-muted">
-            List Price: <s>${listPrice.toFixed(2)}</s>
+            List Price: <s>{usd(listPrice)}</s>
           </p>
         )}
         <div className="mt-1">
@@ -117,7 +117,7 @@ export function Purchase({ product: p, header, details }: { product: Product; he
                     className={`min-w-[52px] rounded-lg border px-3 py-2 text-left text-[13px] transition-shadow ${selected ? "border-link bg-[#edfdff] shadow-[0_0_0_2px_#007185]" : "border-[#888c8c] hover:bg-[#f7fafa]"}`}
                   >
                     <span className="block font-bold">{o.label}</span>
-                    {p.variation!.options.some((x) => x.delta) && <span className="block text-[12px]">${(p.price + o.delta).toFixed(2)}</span>}
+                    {p.variation!.options.some((x) => x.delta) && <span className="block text-[12px]">{usd(p.price + o.delta)}</span>}
                   </button>
                 );
               })}
@@ -133,9 +133,9 @@ export function Purchase({ product: p, header, details }: { product: Product; he
       <div className="mt-6 md:col-span-2 lg:col-span-1 lg:mt-0">
         <div ref={buyRef} className="rounded-lg border border-line p-[18px] lg:sticky lg:top-[110px]">
           <p className="flex items-start leading-none" aria-label={`$${whole}.${cents}`}>
-            <span className="relative top-[-0.4em] text-[13px]">$</span>
-            <span className="text-[28px]">{whole}</span>
-            <span className="relative top-[-0.4em] text-[13px]">{cents}</span>
+            <span className="relative top-[4px] text-[13px] leading-none">$</span>
+            <span className="text-[28px] leading-none">{whole}</span>
+            <span className="relative top-[4px] text-[13px] leading-none">{cents}</span>
           </p>
           {clock ? (
             <>

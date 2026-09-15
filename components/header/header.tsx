@@ -48,7 +48,7 @@ export function Header() {
         {/* Mobile search row, as on Amazon's phone site */}
         <div className="px-3 pb-[10px] sm:hidden">
           <Suspense fallback={<div className="h-10 rounded-md bg-white" />}>
-            <SearchBar departments={deptLinks} />
+            <SearchBar departments={deptLinks} scoped={false} />
           </Suspense>
         </div>
       </div>

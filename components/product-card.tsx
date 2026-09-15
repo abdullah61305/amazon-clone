@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Product, discountPercent, productHref } from "@/lib/catalog";
-import { deliveryDate } from "@/lib/format";
+import { deliveryDate, usd } from "@/lib/format";
 import { Badge, Price, PrimeCheck, ProductImage, Stars } from "@/components/ui";
 import { QuickAddButton } from "@/components/cart/quick-add";
 
@@ -34,7 +34,7 @@ export function ResultCard({ product: p, priority }: { product: Product; priorit
           </Link>
           {p.listPrice && (
             <span className="text-[12px] text-muted">
-              List: <s>${p.listPrice.toFixed(2)}</s>
+              List: <s>{usd(p.listPrice)}</s>
             </span>
           )}
         </div>

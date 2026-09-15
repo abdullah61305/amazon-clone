@@ -238,11 +238,11 @@ function CartRow({ line: l }: { line: CartLine }) {
               <Plus size={16} />
             </button>
           </div>
-          <span className="h-4 w-px bg-line" aria-hidden />
+          <span className="hidden h-4 w-px bg-line sm:block" aria-hidden />
           <button type="button" className={action} onClick={() => remove(l.key)}>
             Delete
           </button>
-          <span className="h-4 w-px bg-line" aria-hidden />
+          <span className="hidden h-4 w-px bg-line sm:block" aria-hidden />
           <button type="button" className={action} onClick={() => saveForLater(l.key)}>
             Save for later
           </button>

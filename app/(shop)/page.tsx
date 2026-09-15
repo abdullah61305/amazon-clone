@@ -37,8 +37,8 @@ function FeatureCard({ title, product, link }: { title: string; product: Product
   return (
     <div className="card flex flex-col p-5 pb-4">
       <h2 className="mb-3 text-[21px] font-bold leading-[27px]">{title}</h2>
-      <Link href={productHref(product)} className="flex-1">
-        <ProductImage src={product.images[0]} alt={product.title} sizes="300px" className="aspect-square h-full" />
+      <Link href={productHref(product)} className="relative min-h-[260px] flex-1 overflow-hidden">
+        <ProductImage src={product.images[0]} alt={product.title} sizes="300px" className="absolute inset-0" />
       </Link>
       <Link href={link.href} className="link mt-4 text-[13px]">
         {link.label}
@@ -78,7 +78,7 @@ export default function HomePage() {
     <div className="bg-page">
       <div className="mx-auto max-w-[1500px]">
         <Hero slides={slides} />
-        <div className="relative z-10 -mt-[70px] space-y-5 px-3 pb-6 sm:-mt-[180px] sm:px-5 lg:-mt-[330px]">
+        <div className="relative z-10 -mt-[40px] space-y-5 px-3 pb-6 sm:-mt-[180px] sm:px-5 lg:-mt-[330px]">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <QuadCard title="Upgrade your everyday tech" items={categoryTiles(["smartphones", "laptops", "tablets", "mobile-accessories"], "electronics")} link={{ label: "Shop electronics", href: "/s?dept=electronics" }} />
             <QuadCard title="Easy updates for elevated spaces" items={categoryTiles(["furniture", "home-decoration", "kitchen-accessories", "sports-accessories"], "home-kitchen").map((t, i) => (i === 3 ? { ...t, href: "/s?dept=sports-outdoors" } : t))} link={{ label: "Shop home products", href: "/s?dept=home-kitchen" }} />

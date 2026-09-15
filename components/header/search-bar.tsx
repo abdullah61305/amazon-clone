@@ -8,11 +8,12 @@ import type { Suggestion } from "@/lib/catalog";
 
 type Dept = { slug: string; name: string };
 
-export function SearchBar({ departments }: { departments: Dept[] }) {
+/** `scoped`: the desktop bar shows (and searches within) the department dropdown; the phone bar always searches everything. */
+export function SearchBar({ departments, scoped = true }: { departments: Dept[]; scoped?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const [query, setQuery] = useState(params.get("k") ?? "");
-  const [dept, setDept] = useState(params.get("dept") ?? "");
+  const [dept, setDept] = useState(scoped ? params.get("dept") ?? "" : "");
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Suggestion[]>([]);
   const [active, setActive] = useState(-1);
@@ -28,7 +29,7 @@ export function SearchBar({ departments }: { departments: Dept[] }) {
   if (synced.urlK !== urlK || synced.urlDept !== urlDept) {
     setSynced({ urlK, urlDept });
     setQuery(urlK);
-    setDept(urlDept);
+    setDept(scoped ? urlDept : "");
   }
 
   useEffect(() => {
@@ -114,7 +115,7 @@ export function SearchBar({ departments }: { departments: Dept[] }) {
           go(active >= 0 && items[active]?.kind === "query" ? (items[active] as { text: string }).text : query);
         }}
       >
-        <label className="relative hidden shrink-0 cursor-pointer items-center border-r border-[#cdcdcd] bg-[#e6e6e6] text-[12px] text-[#555] hover:bg-[#d4d4d4] hover:text-ink sm:flex">
+        <label className={`relative shrink-0 cursor-pointer items-center border-r border-[#cdcdcd] bg-[#e6e6e6] text-[12px] text-[#555] hover:bg-[#d4d4d4] hover:text-ink ${scoped ? "flex" : "hidden"}`}>
           <span className="pointer-events-none flex items-center gap-1 pl-[9px] pr-[7px]">
             {deptLabel}
             <ChevronDown size={12} />
@@ -167,7 +168,7 @@ export function SearchBar({ departments }: { departments: Dept[] }) {
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 top-[40px] z-40 overflow-hidden rounded-b-md border border-[#cdcdcd] bg-white py-1 shadow-[0_2px_4px_rgba(0,0,0,.13)]"
+          className="absolute left-0 right-0 top-[40px] z-40 overflow-hidden rounded-b-md border border-[#cdcdcd] bg-white py-1 text-ink shadow-[0_2px_4px_rgba(0,0,0,.13)]"
           onMouseDown={(e) => e.preventDefault()}
         >
           {queries.map((s, i) => {

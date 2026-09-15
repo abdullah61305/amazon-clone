@@ -21,9 +21,9 @@ export function Logo({ className = "" }: { className?: string }) {
 
 type PriceSize = "sm" | "md" | "lg";
 const priceSizes: Record<PriceSize, { sym: string; whole: string }> = {
-  sm: { sym: "text-[11px] top-[-0.45em]", whole: "text-[21px]" },
-  md: { sym: "text-[13px] top-[-0.55em]", whole: "text-[28px]" },
-  lg: { sym: "text-[14px] top-[-0.75em]", whole: "text-[28px] sm:text-[32px]" },
+  sm: { sym: "text-[11px] top-[2px]", whole: "text-[21px]" },
+  md: { sym: "text-[12px] top-[3px]", whole: "text-[28px]" },
+  lg: { sym: "text-[13px] top-[4px]", whole: "text-[28px] sm:text-[32px]" },
 };
 
 /** Amazon's price treatment: superscript "$", large whole part, superscript cents. */
@@ -32,9 +32,9 @@ export function Price({ value, size = "sm", className = "" }: { value: number; s
   const s = priceSizes[size];
   return (
     <span className={`inline-flex items-start leading-none text-ink ${className}`} aria-label={`$${whole}.${cents}`}>
-      <span className={`relative ${s.sym}`} aria-hidden>$</span>
+      <span className={`relative leading-none ${s.sym}`} aria-hidden>$</span>
       <span className={`${s.whole} font-normal`} aria-hidden>{whole}</span>
-      <span className={`relative ${s.sym}`} aria-hidden>{cents}</span>
+      <span className={`relative leading-none ${s.sym}`} aria-hidden>{cents}</span>
     </span>
   );
 }

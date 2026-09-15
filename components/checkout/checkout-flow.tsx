@@ -11,7 +11,7 @@ import { deliveryDate, usd } from "@/lib/format";
 type Address = Order["address"];
 
 const DELIVERY = [
-  { id: "standard", label: "FREE Standard Delivery", days: 5, price: 0 },
+  { id: "standard", label: "Standard Delivery", days: 5, price: 0 },
   { id: "fast", label: "Fast Delivery", days: 2, price: 5.99, freeOver: 35 },
   { id: "overnight", label: "One-Day Delivery", days: 1, price: 12.99 },
 ] as const;

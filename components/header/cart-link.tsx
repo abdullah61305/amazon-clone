@@ -20,7 +20,7 @@ export function CartLink() {
         </svg>
         <span
           key={shown}
-          className={`absolute left-[15px] top-[-6px] w-[20px] text-center text-[16px] font-bold text-[#f08804] ${ready ? "animate-rise" : ""}`}
+          className={`absolute left-[15px] top-[-9px] w-[20px] leading-none text-center text-[16px] font-bold text-[#f08804] ${ready ? "animate-rise" : ""}`}
         >
           {shown}
         </span>
