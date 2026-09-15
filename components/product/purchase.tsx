@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Lock, MapPin } from "lucide-react";
 import { deliveryDays, type Product } from "@/lib/catalog";
 import { deliveryDate, splitPrice, usd } from "@/lib/format";
+import { useDeliveryZip } from "@/lib/location";
 import { MAX_QTY, useCart } from "@/components/cart/cart-context";
 import { toCartLine } from "@/components/cart/quick-add";
 import { Price, PrimeCheck } from "@/components/ui";
@@ -42,6 +43,7 @@ export function Purchase({ product: p, header, details }: { product: Product; he
   const buyRef = useRef<HTMLDivElement>(null);
   const [buyVisible, setBuyVisible] = useState(true);
   const clock = useClock();
+  const { label: zipLabel, offset: zipOffset } = useDeliveryZip();
 
   const opt = p.variation?.options[option];
   const price = Math.round((p.price + (opt?.delta ?? 0)) * 100) / 100;
@@ -140,10 +142,10 @@ export function Purchase({ product: p, header, details }: { product: Product; he
           {clock ? (
             <>
               <p className="mt-3 text-[14px] leading-[20px]">
-                FREE delivery <b>{deliveryDate(deliveryDays(p), clock.now)}</b>. Order within <span className="text-stock">{clock.cutoff}</span>
+                FREE delivery <b>{deliveryDate(deliveryDays(p) + zipOffset, clock.now)}</b>. Order within <span className="text-stock">{clock.cutoff}</span>
               </p>
               <p className="mt-2 text-[14px] leading-[20px]">
-                Or fastest delivery <b>{deliveryDate(fastDays, clock.now)}</b>
+                Or fastest delivery <b>{deliveryDate(fastDays + zipOffset, clock.now)}</b>
               </p>
             </>
           ) : (
@@ -153,7 +155,7 @@ export function Purchase({ product: p, header, details }: { product: Product; he
             </div>
           )}
           <p className="mt-2 flex items-center gap-1 text-[12px] text-link">
-            <MapPin size={14} /> Deliver to New York 10001
+            <MapPin size={14} /> Deliver to {zipLabel}
           </p>
 
           {soldOut ? (

@@ -8,12 +8,13 @@ A rebuild of the Amazon.com shopping journey — **homepage → search → resul
 
 | Surface | Behaviour |
 |---|---|
-| Header | Sticky two-belt nav, department-scoped search, "All" drawer with sub-menus, Account & Lists flyout, live cart count |
+| Header | Sticky two-belt nav, department-scoped search, keyboard-accessible "All" department menu, changeable delivery ZIP ("Choose your location"), sign-in / create account with "Hello, <name>" and sign out, live cart count |
 | Search | Typeahead suggestions with match highlighting (keyboard accessible), typo correction ("iphnoe" → "iphone") with "Search instead for" the original, stemming |
 | Results | URL-driven filters (department, rating, brand, price, deals — combined with AND), sort, pagination, removable filter chips with instant feedback, mobile filter sheet, **Help me decide** (lowest price / best rated / best value from the current results) |
 | Product page | Hover-swap gallery + full-view lightbox, swipe gallery on phones, variations that change price, buy box with delivery cut-off, reviews histogram, related shelf, sticky mobile add-to-cart |
 | Cart | Instant quantity stepper, delete / save for later with **Undo**, saved-for-later list, free-delivery progress |
-| Checkout | Amazon-style 3-step checkout with validation, delivery speeds, tax and totals, confirmation and Your Orders — **simulated, no payment details collected** |
+| Checkout | Amazon-style 3-step checkout with validation, Stripe-style card form (auto-formatting, brand detection, inline errors, test card) or pay on delivery, delivery speeds, tax and totals, confirmation and Your Orders — **simulated: card details never leave the page and nothing is charged** |
+| Footer | Amazon's tiered footer: back to top, four link columns, logo with language/region pills (visual only), legal bar |
 
 ## Deliberate improvements over amazon.com
 
@@ -30,7 +31,7 @@ A rebuild of the Amazon.com shopping journey — **homepage → search → resul
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · lucide-react · Vercel.
 
-No backend: the catalog is a curated, enriched snapshot of [DummyJSON](https://dummyjson.com) (`scripts/build-catalog.mjs` → `data/catalog.json`), product pages are statically generated, and cart / saved items / orders persist in `localStorage` (synced across tabs).
+No backend: accounts, the delivery ZIP, cart, saved items and orders live in `localStorage` (passwords and card numbers are never stored). The catalog is a curated, enriched snapshot of [DummyJSON](https://dummyjson.com) (`scripts/build-catalog.mjs` → `data/catalog.json`), product pages are statically generated, and all browser state syncs across tabs.
 
 ```bash
 npm install

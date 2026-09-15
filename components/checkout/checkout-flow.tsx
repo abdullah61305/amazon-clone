@@ -4,9 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CreditCard, Info, Loader2, Truck } from "lucide-react";
+import { Banknote, Info, Loader2, Truck } from "lucide-react";
 import { Order, useCart } from "@/components/cart/cart-context";
+import { BrandIcon, CardForm, CardSummary } from "@/components/checkout/card-form";
+import { BRAND_NAMES } from "@/lib/card";
 import { deliveryDate, usd } from "@/lib/format";
+import { useAccount } from "@/lib/account";
+import { useDeliveryZip } from "@/lib/location";
 
 type Address = Order["address"];
 
@@ -18,9 +22,10 @@ const DELIVERY = [
 
 const TAX_RATE = 0.08875; // New York City combined rate
 const PAYMENT = [
-  { id: "demo-card", label: "Demo Visa ending in 4242", detail: "Test card · nothing is charged" },
+  { id: "card", label: "Credit or debit card", detail: "Visa, Mastercard, American Express · test cards only" },
   { id: "cod", label: "Pay on delivery", detail: "Cash or card when your order arrives" },
-];
+] as const;
+const CARD_FORM_ID = "checkout-card-form";
 
 const blankAddress: Address = { name: "", street: "", city: "", state: "", zip: "" };
 
@@ -37,10 +42,13 @@ function validate(a: Address) {
 export function CheckoutFlow() {
   const router = useRouter();
   const { lines, ready, subtotal, count, placeOrder } = useCart();
+  const account = useAccount();
+  const { zip: deliveryZip, label: deliveryLabel, offset: zipOffset } = useDeliveryZip();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [address, setAddress] = useState<Address>(blankAddress);
   const [touched, setTouched] = useState(false);
-  const [payment, setPayment] = useState(PAYMENT[0].id);
+  const [payment, setPayment] = useState<(typeof PAYMENT)[number]["id"]>(PAYMENT[0].id);
+  const [card, setCard] = useState<CardSummary | null>(null);
   const [delivery, setDelivery] = useState<(typeof DELIVERY)[number]["id"]>("standard");
   const [placing, setPlacing] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
@@ -78,7 +86,7 @@ export function CheckoutFlow() {
   const shipping = "freeOver" in option && subtotal >= option.freeOver ? 0 : option.price;
   const tax = Math.round((subtotal + shipping) * TAX_RATE * 100) / 100;
   const total = Math.round((subtotal + shipping + tax) * 100) / 100;
-  const canPlace = step === 3 && addressValid && !placing;
+  const canPlace = step === 3 && addressValid && (payment === "cod" || !!card) && !placing;
 
   const submitAddress = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +100,7 @@ export function CheckoutFlow() {
     await new Promise((r) => setTimeout(r, 900)); // simulated payment authorization
     const order = placeOrder({
       address,
-      delivery: { label: option.label, days: option.days, price: shipping },
+      delivery: { label: option.label, days: option.days + zipOffset, price: shipping },
       subtotal,
       shipping,
       tax,
@@ -118,6 +126,7 @@ export function CheckoutFlow() {
       </p>
       <hr className="my-3 border-line" />
       <h2 className="mb-2 text-[18px] font-bold">Order Summary</h2>
+      {account && <p className="mb-2 text-[12px] text-muted">Ordering as <span className="font-bold text-ink">{account.name}</span> ({account.email})</p>}
       <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-[12px]">
         <dt>Items ({count}):</dt>
         <dd className="text-right">{usd(subtotal)}</dd>
@@ -141,7 +150,7 @@ export function CheckoutFlow() {
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#0073bb] bg-[#f3f9fd] p-3 text-[13px]">
           <Info size={18} className="mt-[1px] shrink-0 text-[#0073bb]" />
           <p>
-            <b>This is a demo checkout.</b> Use any address. No real payment details are requested and nothing is charged.
+            <b>This is a demo checkout.</b> Use any address and the test card. Card details never leave this page and nothing is charged.
           </p>
         </div>
 
@@ -165,7 +174,13 @@ export function CheckoutFlow() {
                 type="button"
                 className="text-[13px] text-link hover:text-link-hover hover:underline"
                 onClick={() => {
-                  setAddress({ name: "Jordan Lee", street: "350 5th Ave", city: "New York", state: "NY", zip: "10001" });
+                  setAddress({
+                    name: account ? `${account.name} Lee` : "Jordan Lee",
+                    street: "350 5th Ave",
+                    city: deliveryLabel.replace(/\s*\d{5}$/, "") || "New York",
+                    state: "NY",
+                    zip: deliveryZip,
+                  });
                   setTouched(false);
                 }}
               >
@@ -177,23 +192,50 @@ export function CheckoutFlow() {
 
         {/* 2. Payment */}
         <Step n={2} title="Payment method" active={step === 2} done={step > 2} onChange={() => setStep(2)} locked={step < 2}
-          summary={<p className="flex items-center gap-2 text-[14px]"><CreditCard size={18} /> {PAYMENT.find((p) => p.id === payment)!.label}</p>}
+          summary={
+            payment === "card" && card ? (
+              <p className="flex items-center gap-2 text-[14px]"><BrandIcon brand={card.brand} /> {BRAND_NAMES[card.brand]} ending in {card.last4}</p>
+            ) : (
+              <p className="flex items-center gap-2 text-[14px]"><Banknote size={18} /> Pay on delivery</p>
+            )
+          }
         >
           <fieldset className="space-y-2">
             <legend className="sr-only">Payment method</legend>
             {PAYMENT.map((p) => (
-              <label key={p.id} className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${payment === p.id ? "border-[#fbd8b4] bg-[#fcf5ee]" : "border-line"}`}>
-                <input type="radio" name="payment" value={p.id} checked={payment === p.id} onChange={() => setPayment(p.id)} className="h-4 w-4 accent-[#e77600]" />
-                <span>
-                  <span className="block text-[14px] font-bold">{p.label}</span>
-                  <span className="text-[12px] text-muted">{p.detail}</span>
-                </span>
-              </label>
+              <div key={p.id} className={`rounded-lg border ${payment === p.id ? "border-[#fbd8b4] bg-[#fcf5ee]" : "border-line"}`}>
+                <label className="flex cursor-pointer items-center gap-3 p-3">
+                  <input type="radio" name="payment" value={p.id} checked={payment === p.id} onChange={() => setPayment(p.id)} className="h-4 w-4 accent-[#e77600]" />
+                  <span>
+                    <span className="block text-[14px] font-bold">{p.label}</span>
+                    <span className="text-[12px] text-muted">{p.detail}</span>
+                  </span>
+                </label>
+                {p.id === "card" && payment === "card" && (
+                  <div className="animate-fade-in border-t border-[#fbd8b4] bg-white p-4 rounded-b-lg">
+                    <CardForm
+                      id={CARD_FORM_ID}
+                      defaultName={address.name}
+                      defaultZip={address.zip}
+                      onSubmit={(summary) => {
+                        setCard(summary);
+                        setStep(3);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             ))}
           </fieldset>
-          <button type="button" className="btn-yellow mt-4 px-5 py-2" onClick={() => setStep(3)}>
-            Use this payment method
-          </button>
+          {payment === "card" ? (
+            <button type="submit" form={CARD_FORM_ID} className="btn-yellow mt-4 px-5 py-2">
+              Use this payment method
+            </button>
+          ) : (
+            <button type="button" className="btn-yellow mt-4 px-5 py-2" onClick={() => setStep(3)}>
+              Use this payment method
+            </button>
+          )}
         </Step>
 
         {/* 3. Review */}
@@ -201,7 +243,7 @@ export function CheckoutFlow() {
           <div className="rounded-lg border border-line">
             <div className="border-b border-line p-4">
               <p className="flex items-center gap-2 text-[16px] font-bold text-stock">
-                <Truck size={18} /> Arriving {now ? deliveryDate(option.days, now) : "…"}
+                <Truck size={18} /> Arriving {now ? deliveryDate(option.days + zipOffset, now) : "…"}
               </p>
             </div>
             <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[1fr_260px]">
@@ -228,7 +270,7 @@ export function CheckoutFlow() {
                     <label key={d.id} className="flex cursor-pointer items-start gap-2 py-1 text-[14px]">
                       <input type="radio" name="delivery" checked={delivery === d.id} onChange={() => setDelivery(d.id)} className="mt-1 h-4 w-4 accent-[#e77600]" />
                       <span>
-                        <b className="text-stock">{now ? deliveryDate(d.days, now) : "…"}</b>
+                        <b className="text-stock">{now ? deliveryDate(d.days + zipOffset, now) : "…"}</b>
                         <br />
                         <span className="text-muted">
                           {price === 0 ? "FREE" : usd(price)} – {d.label}

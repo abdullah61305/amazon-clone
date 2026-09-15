@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { MapPin } from "lucide-react";
 import { departments } from "@/lib/catalog";
 import { Logo } from "@/components/ui";
 import { SearchBar } from "@/components/header/search-bar";
+import { DeliverTo } from "@/components/header/deliver-to";
 import { CartLink } from "@/components/header/cart-link";
 import { NavDrawer } from "@/components/header/nav-drawer";
 import { AccountMenu } from "@/components/header/account-menu";
@@ -24,13 +24,7 @@ export function Header() {
           <Link href="/" className={`${beltLink} shrink-0 pt-[9px]`}>
             <Logo />
           </Link>
-          <button type="button" className={`${beltLink} hidden shrink-0 items-end gap-[2px] text-left lg:flex`} aria-label="Delivering to New York 10001">
-            <MapPin size={16} className="mb-[2px]" />
-            <span className="flex flex-col leading-[15px]">
-              <span className="text-[12px] text-[#ccc]">Deliver to</span>
-              <span className="text-[14px] font-bold">New York 10001</span>
-            </span>
-          </button>
+          <DeliverTo className={`${beltLink} hidden shrink-0 items-end gap-[2px] text-left lg:flex`} />
           <div className="mx-1 hidden flex-1 sm:flex">
             <Suspense fallback={<div className="h-10 flex-1 rounded-md bg-white" />}>
               <SearchBar departments={deptLinks} />
@@ -51,6 +45,7 @@ export function Header() {
             <SearchBar departments={deptLinks} scoped={false} />
           </Suspense>
         </div>
+        <DeliverTo variant="strip" className="sm:hidden" />
       </div>
       {/* Secondary belt */}
       <nav aria-label="Departments" className="bg-nav-2">
