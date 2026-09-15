@@ -38,7 +38,9 @@ function FeatureCard({ title, product, link }: { title: string; product: Product
     <div className="card flex flex-col p-5 pb-4">
       <h2 className="mb-3 text-[21px] font-bold leading-[27px]">{title}</h2>
       <Link href={productHref(product)} className="relative min-h-[260px] flex-1 overflow-hidden">
-        <ProductImage src={product.images[0]} alt={product.title} sizes="300px" className="absolute inset-0" />
+        <div className="absolute inset-0">
+          <ProductImage src={product.images[0]} alt={product.title} sizes="300px" className="h-full w-full" />
+        </div>
       </Link>
       <Link href={link.href} className="link mt-4 text-[13px]">
         {link.label}
